@@ -22,6 +22,10 @@ class IncidenciaCreate(BaseModel):
 
 class IncidenciaResponse(IncidenciaCreate):
     id: int
+    titulo: str
+    descripcion: str
+    prioridad: str
+    estado: str
     class Config:
         from_attributes = True
 
@@ -39,18 +43,25 @@ def nombre(usuario: str = Depends(get_current_user)):
 
 @app.get("/incidencias", response_model=list[IncidenciaResponse])
 def listar_incidencias(db: Session = Depends(get_db)):
-    return db.query(Incidencia).all()
+    try:
+        incidencias = db.query(Incidencia).all()
+        return incidencias
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/incidencias/{incidencia_id}", response_model=IncidenciaResponse)
 def obtener_incidencia(incidencia_id: int, db: Session = Depends(get_db)):
-    inc = db.query(Incidencia).filter(Incidencia.id == incidencia_id).first()
-    if not inc:
+    incidencia = db.query(Incidencia).filter(Incidencia.id == incidencia_id).first()
+    if not incidencia:
         raise HTTPException(status_code=404, detail="Incidencia no encontrada")
-    return inc
+    return incidencia
 
 @app.post("/incidencias", response_model=IncidenciaResponse, status_code=201)
-def crear_incidencia(incidencia: IncidenciaCreate, db: Session = Depends(get_db),
-    usuario: str = Depends(get_current_user)):
+def crear_incidencia(
+    incidencia: IncidenciaCreate,
+    db: Session = Depends(get_db),
+    usuario: str = Depends(get_current_user)
+):
     nueva = Incidencia(
         titulo=incidencia.titulo,
         descripcion=incidencia.descripcion,
